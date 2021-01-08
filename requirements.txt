@@ -1,0 +1,12 @@
+Paths to set:
+-input_path: Path from where to read in dat ato be analysed
+-output_path: Path to save final output file
+-dictionary_excel_path: Path to dictionary in Excel format
+-cleaning_path: Path to cleaning Excel file
+-path to repo for PDFs to be saved
+
+Python packages:
+pandas (version 0.23.4)
+numpy (version 1.14.1)
+time
+string
