@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-In this script, we construct a search engine to conduct a text search in 
+In this script, we construct a search engine to conduct a text search in
 vacancy data.
 """
 # Import necessary packages
@@ -11,7 +11,7 @@ import string
 
 def read_stata_data(input_path, filename):
     """ Import Stata file and retrun dataframe.
-    Args: 
+    Args:
         input_path: Path where cleaned Stata .dta file lies
         filename: filename of Stata .dta file
     Returns:
@@ -45,7 +45,7 @@ def write_excel_data(dataframe, output_path, output_filename, sheet_name):
 def unify_job_description(dataframe, colname1, colname2, newcol):
     """ Migrate job description and imputed job_description
     Args:
-        colname1: Column with imputed 
+        colname1: Column with imputed
         colname2: Column with old job description
         newcol: New harmonized column
     Returns:
@@ -53,7 +53,7 @@ def unify_job_description(dataframe, colname1, colname2, newcol):
     """
     dataframe[[colname1, colname2]] = dataframe[[colname1,colname2]].fillna(value='')
     dataframe[newcol] = dataframe[colname1].astype(str) + "  " + dataframe[colname2].astype(str)
-    dataframe[newcol + "_strict"] = "" 
+    dataframe[newcol + "_strict"] = ""
     dataframe.loc[(dataframe.jobdesc_imputation == 0) | (dataframe.jobdesc_imputation == 1), newcol + "_strict"]  = dataframe[colname1].astype(str) + "  " + dataframe[colname2].astype(str)
     return dataframe
 
@@ -98,7 +98,7 @@ def clean_spec_chars(cleaning_path, cleaning_filename, spec_char_sheet, datafram
     Returns:
         cleaned dataframe
     """
-    cleaner = read_excel_data(cleaning_path, cleaning_filename, spec_char_sheet) 
+    cleaner = read_excel_data(cleaning_path, cleaning_filename, spec_char_sheet)
     languages = list(cleaner)
     for ln in languages:
         to_cancel = cleaner[ln].dropna().tolist()
@@ -107,7 +107,7 @@ def clean_spec_chars(cleaning_path, cleaning_filename, spec_char_sheet, datafram
             old = item[0]
             new = item[1]
             dataframe[col_name] = dataframe[col_name].str.replace(old, new)
-    return dataframe  
+    return dataframe
 
 def clean_stop_words(cleaning_path, cleaning_filename, stop_word_sheet, dataframe, col_name):
     """Clean text from stopwords to facilitate term frequency generation.
@@ -119,17 +119,17 @@ def clean_stop_words(cleaning_path, cleaning_filename, stop_word_sheet, datafram
     Returns:
         cleaned vacancy column
     """
-    cleaner = read_excel_data(cleaning_path, cleaning_filename, stop_word_sheet) 
+    cleaner = read_excel_data(cleaning_path, cleaning_filename, stop_word_sheet)
     languages = list(cleaner)
     for ln in languages:
         to_cancel = cleaner[ln].dropna().tolist()
         for item in to_cancel:
             item =  " " + item + " "
             dataframe[col_name] = dataframe[col_name].str.replace(item," ")
-    return dataframe  
+    return dataframe
 
 def clean_others(cleaning_path, cleaning_filename, others_sheet, dataframe, col_name):
-    """Clean text from other special words and characters to 
+    """Clean text from other special words and characters to
     facilitate term frequency generation.
     Args:
         dataframe: Stata generaated pandas dataframe
@@ -140,25 +140,25 @@ def clean_others(cleaning_path, cleaning_filename, others_sheet, dataframe, col_
     Returns:
         cleaned vacancy column
     """
-    cleaner = read_excel_data(cleaning_path, cleaning_filename, others_sheet) 
+    cleaner = read_excel_data(cleaning_path, cleaning_filename, others_sheet)
     languages = list(cleaner)
     for ln in languages:
         to_cancel = cleaner[ln].dropna().tolist()
         for item in to_cancel:
             item =  " " + str(item) + " "
             dataframe[col_name] = dataframe[col_name].str.replace(item," ")
-    return dataframe  
+    return dataframe
 
 def identify_regex_keys(key_str, regex_dict):
     """ Identify if the key is a regular expression or a simple key word in order
-    to allow for differential treatment. If a regex key is found we want to build 
+    to allow for differential treatment. If a regex key is found we want to build
     the corresponding regular expression, otherwise just pass the key word
     to be made lowercase.
     Args:
         key_str: String input from key list
         regex_dict: dictionary of possible regex conditions
     Returns:
-        Raw string or transformed regex condition 
+        Raw string or transformed regex condition
     NOTE: This function needs to be extended in case more than type 1 regex will
     be added.
     """
@@ -188,7 +188,7 @@ def identify_regex_keys(key_str, regex_dict):
         return key_str
 
 def read_dictionary(dictionary_excel_path, dictionary_excel_file, cleaning_path, cleaning_filename, spec_char_sheet):
-    """ Reads dictionary xlsx file and stores single skills sheets as seperate 
+    """ Reads dictionary xlsx file and stores single skills sheets as seperate
     dataframes.
     Args:
         dictionary_excel_path: Path to dictionary file
@@ -243,7 +243,7 @@ def build_search_dict_list(dictionary_list, regex_dict):
                 keys = keys + subframe[col].values.tolist()
             # Make unique
             keys =  [i for i in list(set(keys)) if str(i) != 'nan']
-            # Replace regex expression if needed 
+            # Replace regex expression if needed
             #print(keys)
             keys = [identify_regex_keys(i, regex_dict) for i in keys] # Check this
             # Update single skill category dictionary
@@ -284,11 +284,11 @@ def build_search_matrix(dataframe, pydict_list, search_col):
                 if all(x in key for x in ['w+', 'W+', '(?:\w+\W+)']):
                     dataframe["current_key"] = dataframe[search_col].str.contains(key) # Note since we include reguular expressions regex = True over here!!
                 else:
-                    dataframe["current_key"] = dataframe[search_col].str.contains(key, regex = False) 
+                    dataframe["current_key"] = dataframe[search_col].str.contains(key, regex = False)
                 # If key word is contained add skill requirement and key word tp seperate list
-                dataframe.loc[dataframe.current_key == True, "req_" + skillname ] += [str(req)]
-                dataframe.loc[dataframe.current_key == True, "keys_" + skillname] += [str(key)]
-            # Erase duplicates   
+                dataframe.loc[dataframe.current_key == True, "req_" + skillname ].apply(lambda x: x.append(str(req)))
+                dataframe.loc[dataframe.current_key == True, "keys_" + skillname].apply(lambda x: x.append(str(key)))
+            # Erase duplicates
             dataframe["req_" + skillname ] = dataframe["req_" + skillname ].apply(set).apply(list)
             dataframe["keys_" + skillname] = dataframe["keys_" + skillname].apply(set).apply(list)
         # Create "|"-concatenated string
@@ -306,13 +306,13 @@ def main():
     cleaning_path = "C:\\Users\\Calogero\\Documents\\GitHub\\job_portal_text_analyisis_tool\\data\\input\\"
     filename = "sample_jp_data.xlsx"
     cleaning_filename = "cleaning_import.xlsx"
-   
+
     output_path = "C:\\Users\\Calogero\\Documents\\GitHub\\job_portal_text_analyisis_tool\\data\\output\\"
     output_filename = "sample_jp_data_out.xlsx"
     output_sheet = "text_search"
     # Run algortihm
     start_time = time.time() # Capture start and end time for performance
-    
+
     print("Reading and pre-processing data...")
     dataframe = read_excel_data(input_path, filename, "sample")
     #dataframe = unify_job_description(dataframe, "job_description", "job_description_adj", "ta_str")
@@ -321,12 +321,12 @@ def main():
     dataframe = remove_punctuation(dataframe, "job_description", " ")
     dataframe = clean_spec_chars(cleaning_path, cleaning_filename, "special_characters", dataframe, "job_description")
     dataframe = clean_others(cleaning_path, cleaning_filename, "others", dataframe, "job_description")
-    
-    # Include regular expression dictionary 
+
+    # Include regular expression dictionary
     regex_dict = dict([(1, r'bword1W+(?:w+W+){a,b}?word2b'),
                         (2, r'bword1W+(?:w+W+){a,b}?word2bW+(?:w+W+){a,b}?word3b')])
-     
-    # Run text search          
+
+    # Run text search
     dictionary_excel_path = "C:\\Users\\Calogero\\Documents\\GitHub\\job_portal_text_analyisis_tool\\data\\input\\"
     dictionary_excel_file = "dictionary.xlsx" # Insert most current file here
     dictionary_list = read_dictionary(dictionary_excel_path, dictionary_excel_file, cleaning_path, cleaning_filename, "special_characters")
@@ -334,15 +334,14 @@ def main():
 
     # Build search matrix
     search_matrix = build_search_matrix(dataframe, pydict_list, "job_description")
-    write_excel_data(search_matrix, output_path, output_filename, output_sheet) 
+    write_excel_data(search_matrix, output_path, output_filename, output_sheet)
 
     end_time = time.time()
     duration = time.strftime("%H:%M:%S", time.gmtime(end_time - start_time))
-    
+
     # For interaction and error handling
     final_text = "Your query was successful! Time elapsed:" + str(duration)
     print(final_text)
-    
+
 if __name__ == "__main__":
     main()
-    

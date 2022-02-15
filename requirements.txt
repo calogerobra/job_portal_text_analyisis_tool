@@ -6,7 +6,7 @@ Paths to set:
 -path to repo for PDFs to be saved
 
 Python packages:
-pandas (version 0.23.4)
-numpy (version 1.14.1)
+pandas (version 1.X)
+numpy (at least version 1.14.1)
 time
 string
